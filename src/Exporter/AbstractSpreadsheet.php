@@ -1,12 +1,14 @@
 <?php
+
 namespace Cyberduck\LaravelExcel\Exporter;
 
-use Illuminate\Support\Collection;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
-use Illuminate\Database\Query\Builder;
-use Cyberduck\LaravelExcel\Serialiser\BasicSerialiser;
-use Cyberduck\LaravelExcel\Contract\SerialiserInterface;
 use Cyberduck\LaravelExcel\Contract\ExporterInterface;
+use Cyberduck\LaravelExcel\Contract\SerialiserInterface;
+use Cyberduck\LaravelExcel\Serialiser\BasicSerialiser;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 
 abstract class AbstractSpreadsheet implements ExporterInterface
 {
@@ -36,7 +38,13 @@ abstract class AbstractSpreadsheet implements ExporterInterface
         return $this;
     }
 
-    public function loadQuery(Builder $query)
+    /**
+     * Load Query
+     *
+     * @param Builder|EloquentBuilder $query
+     * @return self
+     */
+    public function loadQuery($query)
     {
         $this->data = $query;
         return $this;
@@ -90,9 +98,9 @@ abstract class AbstractSpreadsheet implements ExporterInterface
             $row = WriterEntityFactory::createRowFromArray($headerRow);
             $writer->addRow($row);
         }
-        if ($this->data instanceof Builder) {
-            if (isset($this->chuncksize)) {
-                $this->data->chunk($this->chuncksize);
+        if ($this->data instanceof Builder || $this->data instanceof EloquentBuilder) {
+            if (isset($this->chunksize)) {
+                $this->data->chunk($this->chunksize, fn ($data) => $this->addRowsDataToWriter($data, $writer));
             } else {
                 $this->addRowsDataToWriter($this->data->get(), $writer);
             }
